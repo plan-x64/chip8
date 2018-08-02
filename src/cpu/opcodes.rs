@@ -48,7 +48,7 @@ impl Opcode for JP {
 
 impl Display for JP {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "JP {:#03x}", self.addr)
+        write!(f, "JP {:#05x}", self.addr)
     }
 }
 
@@ -67,7 +67,7 @@ impl Opcode for CALL {
 
 impl Display for CALL {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "CALL {:#03x}", self.addr)
+        write!(f, "CALL {:#05x}", self.addr)
     }
 }
 
@@ -86,7 +86,7 @@ impl Opcode for SEVxByte {
 
 impl Display for SEVxByte {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SE V{:x}, {:#02x}", self.x, self.byte)
+        write!(f, "SE V{:x}, {:#04x}", self.x, self.byte)
     }
 }
 
@@ -143,7 +143,7 @@ impl Opcode for LDVxByte {
 
 impl Display for LDVxByte {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD V{:x}, {:#02x}", self.x, self.byte)
+        write!(f, "LD V{:x}, {:#04x}", self.x, self.byte)
     }
 }
 
@@ -162,7 +162,7 @@ impl Opcode for ADDVxByte {
 
 impl Display for ADDVxByte {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "ADD V{:x}, {:#02x}", self.x, self.byte)
+        write!(f, "ADD V{:x}, {:#04x}", self.x, self.byte)
     }
 }
 
@@ -371,7 +371,7 @@ impl Opcode for LDIAddr {
 
 impl Display for LDIAddr {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD I, {:#03x}", self.addr)
+        write!(f, "LD I, {:#05x}", self.addr)
     }
 }
 
@@ -390,7 +390,7 @@ impl Opcode for JPV0Addr {
 
 impl Display for JPV0Addr {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "JP V0, {:#03x}", self.addr)
+        write!(f, "JP V0, {:#05x}", self.addr)
     }
 }
 
@@ -409,7 +409,7 @@ impl Opcode for RNDVxByte {
 
 impl Display for RNDVxByte {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "RND V{:x}, {:#02x}", self.x, self.byte)
+        write!(f, "RND V{:x}, {:#04x}", self.x, self.byte)
     }
 }
 
@@ -428,7 +428,7 @@ impl Opcode for DRW {
 
 impl Display for DRW {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "DRW V{:x}, V{:x}, {:#01x}", self.x, self.y, self.nibble)
+        write!(f, "DRW V{:x}, V{:x}, {:#03x}", self.x, self.y, self.nibble)
 
     }
 }
