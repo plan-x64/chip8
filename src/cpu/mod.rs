@@ -1,6 +1,6 @@
 const STACK_UPPER_BOUND: usize = 16;
 
-mod opcodes;
+pub mod opcodes;
 use self::opcodes::*;
 
 #[derive(Copy, Clone)]
@@ -42,7 +42,7 @@ impl ProcState {
     }
 
     fn check_sp_bounds(self) {
-        if (self.sp >= 0x0) && (self.sp <= STACK_UPPER_BOUND) {
+        if self.sp > STACK_UPPER_BOUND {
             panic!("SP={} is out of bounds!", self.sp)
         }
     }

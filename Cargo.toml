@@ -2,5 +2,4 @@
 name = "chip8"
 version = "0.1.0"
 authors = ["pal25 <nope@nope.net>"]
-
-[dependencies]
+publish = false
