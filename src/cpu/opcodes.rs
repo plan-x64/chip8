@@ -257,7 +257,7 @@ impl Opcode for ANDVxVy {
 
 impl Display for ANDVxVy {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, " V{:x}, V{:x}", self.x, self.y)
+        write!(f, "AND V{:x}, V{:x}", self.x, self.y)
     }
 }
 
@@ -656,7 +656,7 @@ impl Opcode for UNKNOWN {
 
 impl Display for UNKNOWN {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "UNKNOWN {:?}\n", self.op)
+        write!(f, "UNKNOWN ({:#03x}, {:#03x}, {:#03x}, {:#03x})", self.op.0, self.op.1, self.op.2, self.op.3)
     }
 }
 
@@ -738,12 +738,27 @@ mod tests {
     }
 
     #[test]
-    pub fn op_nnn_strips_first_four_bits() {
+    pub fn op_nnn_pulls_correct_value() {
         assert_eq!(0x5C4, op_nnn(0xF5C4));
     }
 
     #[test]
     pub fn op_x_pulls_correct_value() {
         assert_eq!(0x2, op_x(0x1234));
+    }
+
+    #[test]
+    pub fn op_xy_pulls_correct_values() {
+        assert_eq!((0xB, 0xC), op_xy(0xABCD));
+    }
+
+    #[test]
+    pub fn op_kk_pulls_correct_value() {
+        assert_eq!((0x89), op_kk(0x6789))
+    }
+
+    #[test]
+    pub fn op_n_pulls_correct_value() {
+        assert_eq!((0xF), op_n(0xCDEF));
     }
 }

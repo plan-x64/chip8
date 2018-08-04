@@ -16,11 +16,13 @@ fn main() {
     let cart = Cartridge::load(&mut f);
 
     println!("Cart Loaded. Size={} bytes", cart.size);
+    println!(" {:2}  |  {:2}  | {}", "PC", "OP", "INSTRUCTION");
+
 
     let mut pc: usize = 0;
     while pc < cart.size {
         let opcode: u16 = ((cart.buffer[pc] as u16) << 8) | cart.buffer[pc+1] as u16;
-        println!("{:04X}: {}", opcode, get_opcode(opcode));
+        println!("{:04X} | {:04X} | {}", pc, opcode, get_opcode(opcode));
         pc = pc + 2;
     }
 }
