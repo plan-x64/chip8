@@ -1,702 +1,124 @@
-use std::fmt::{Display, Result, Formatter};
+use std::fmt::{Display, Formatter, Result};
+
 use super::ProcState;
 
-pub trait Opcode: Display {
-    fn exec(&self, proc_state: &mut ProcState);
+pub enum Opcode {
+    CLS,
+    RET,
+    JP { addr: u16 },
+    CALL{ addr: u16 },
+    SEVxByte{ x: u8, byte: u8 },
+    SNEVxByte{ x: u8, byte: u8 },
+    SEVxVy{ x: u8, y: u8 },
+    LDVxByte{ x: u8, byte: u8 },
+    ADDVxByte{ x: u8, byte: u8 },
+    LDVxVy{ x: u8, y: u8 },
+    ORVxVy{ x: u8, y: u8 },
+    ANDVxVy{ x: u8, y: u8 },
+    XORVxVy{ x: u8, y: u8 },
+    ADDVxVy{ x: u8, y: u8 },
+    SUBVxVy{ x: u8, y: u8 },
+    SHRVxVy{ x: u8, y: u8 },
+    SUBNVxVy{ x: u8, y: u8 },
+    SHLVxVy{ x: u8, y: u8 },
+    SNEVxVy{ x: u8, y: u8 },
+    LDIAddr{ addr: u16 },
+    JPV0Addr{ addr: u16 },
+    RNDVxByte{ x: u8, byte: u8 },
+    DRW{ x: u8, y: u8, nibble: u8 },
+    SKPVx{ x: u8 },
+    SKNPVx{ x: u8 },
+    LDVxDT{ x: u8 },
+    LDVxK{ x: u8 },
+    LDDTVx{ x: u8 },
+    LDSTVx{ x: u8 },
+    ADDIVx{ x: u8 },
+    LDFVx{ x: u8 },
+    LDBVx{ x: u8 },
+    LDIVx{ x: u8 },
+    LDVxI{ x: u8 },
+    UNKNOWN{ opcode: (u8, u8, u8, u8) }
 }
 
-pub struct CLS;
-impl Opcode for CLS {
-    fn exec(&self, proc_state: &mut ProcState) {
-        panic!("CLS not implemented")
-    }
-}
-
-
-impl Display for CLS {
+impl Display for Opcode {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "CLS")
-    }
-}
-
-pub struct RET;
-impl Opcode for RET {
-    fn exec(&self, proc_state: &mut ProcState) {
-        proc_state.pop();
-    }
-}
-
-
-impl Display for RET {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "RET")
-    }
-}
-
-pub struct JP { addr: u16 }
-impl JP {
-    pub fn new(nnn: u16) -> JP {
-        JP { addr: nnn }
-    }
-}
-
-impl Opcode for JP {
-    fn exec(&self, proc_state: &mut ProcState) {
-        proc_state.pc = self.addr;
-    }
-}
-
-impl Display for JP {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "JP {:#05x}", self.addr)
-    }
-}
-
-pub struct CALL { addr: u16 }
-impl CALL {
-    pub fn new(nnn: u16) -> CALL {
-        CALL { addr: nnn }
-    }
-}
-
-impl Opcode for CALL {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for CALL {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "CALL {:#05x}", self.addr)
-    }
-}
-
-pub struct SEVxByte { x: u8, byte: u8 }
-impl SEVxByte {
-    pub fn new(x: u8, byte: u8) -> SEVxByte {
-        SEVxByte { x, byte }
-    }
-}
-
-impl Opcode for SEVxByte {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SEVxByte {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SE V{:x}, {:#04x}", self.x, self.byte)
-    }
-}
-
-pub struct SNEVxByte { x: u8, byte: u8 }
-impl SNEVxByte {
-    pub fn new(x: u8, byte: u8) -> SNEVxByte {
-        SNEVxByte { x, byte }
-    }
-}
-
-impl Opcode for SNEVxByte {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SNEVxByte {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SNE V{:x}, {:#02x}", self.x, self.byte)
-    }
-}
-
-pub struct SEVxVy { x: u8, y: u8 }
-impl SEVxVy {
-    pub fn new(x: u8, y: u8) -> SEVxVy {
-        SEVxVy { x, y }
-    }
-}
-
-impl Opcode for SEVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SEVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SE V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct LDVxByte { x: u8, byte: u8 }
-impl LDVxByte {
-    pub fn new(x: u8, byte: u8) -> LDVxByte {
-        LDVxByte { x, byte }
-    }
-}
-
-impl Opcode for LDVxByte {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDVxByte {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD V{:x}, {:#04x}", self.x, self.byte)
-    }
-}
-
-pub struct ADDVxByte { x: u8, byte: u8 }
-impl ADDVxByte {
-    pub fn new(x: u8, byte: u8) -> ADDVxByte {
-        ADDVxByte { x, byte }
-    }
-}
-
-impl Opcode for ADDVxByte {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for ADDVxByte {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "ADD V{:x}, {:#04x}", self.x, self.byte)
-    }
-}
-
-pub struct LDVxVy { x: u8, y: u8 }
-impl LDVxVy {
-    pub fn new(x: u8, y: u8) -> LDVxVy {
-        LDVxVy { x, y }
-    }
-}
-
-impl Opcode for LDVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct ORVxVy { x: u8, y: u8 }
-impl ORVxVy {
-    pub fn new(x: u8, y: u8) -> ORVxVy {
-        ORVxVy { x, y }
-    }
-}
-
-impl Opcode for ORVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for ORVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "OR V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct ADDVxVy { x: u8, y: u8 }
-impl ADDVxVy {
-    pub fn new(x: u8, y: u8) -> ADDVxVy {
-        ADDVxVy { x, y }
-    }
-}
-
-impl Opcode for ADDVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for ADDVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "ADD V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct XORVxVy { x: u8, y: u8 }
-impl XORVxVy {
-    pub fn new(x: u8, y: u8) -> XORVxVy {
-        XORVxVy { x, y }
-    }
-}
-
-impl Opcode for XORVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for XORVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "XOR V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct ANDVxVy { x: u8, y: u8 }
-impl ANDVxVy {
-    pub fn new(x: u8, y: u8) -> ANDVxVy {
-        ANDVxVy { x, y }
-    }
-}
-
-impl Opcode for ANDVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for ANDVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "AND V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct SUBVxVy { x: u8, y: u8 }
-impl SUBVxVy {
-    pub fn new(x: u8, y: u8) -> SUBVxVy {
-        SUBVxVy { x, y }
-    }
-}
-
-impl Opcode for SUBVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SUBVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SUB V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct SHRVxVy { x: u8, y: u8 }
-impl SHRVxVy {
-    pub fn new(x: u8, y: u8) -> SHRVxVy {
-        SHRVxVy { x, y }
-    }
-}
-
-impl Opcode for SHRVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SHRVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SHR V{:x} {{, V{:x}}}", self.x, self.y)
-    }
-}
-
-pub struct SUBNVxVy { x: u8, y: u8 }
-impl SUBNVxVy {
-    pub fn new(x: u8, y: u8) -> SUBNVxVy {
-        SUBNVxVy { x, y }
-    }
-}
-
-impl Opcode for SUBNVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SUBNVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SUBN V{:x}, V{:X}", self.x, self.y)
-    }
-}
-
-pub struct SHLVxVy { x: u8, y: u8 }
-impl SHLVxVy {
-    pub fn new(x: u8, y: u8) -> SHLVxVy {
-        SHLVxVy { x, y }
-    }
-}
-
-impl Opcode for SHLVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SHLVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SHL V{:x} {{, V{:x}}}", self.x, self.y)
-    }
-}
-
-pub struct SNEVxVy { x: u8, y: u8 }
-impl SNEVxVy {
-    pub fn new(x: u8, y: u8) -> SNEVxVy {
-        SNEVxVy { x, y }
-    }
-}
-
-impl Opcode for SNEVxVy {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SNEVxVy {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SNE V{:x}, V{:x}", self.x, self.y)
-    }
-}
-
-pub struct LDIAddr { addr: u16 }
-impl LDIAddr {
-    pub fn new(addr: u16) -> LDIAddr {
-        LDIAddr { addr }
-    }
-}
-
-impl Opcode for LDIAddr {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDIAddr {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD I, {:#05x}", self.addr)
-    }
-}
-
-pub struct JPV0Addr { addr: u16 }
-impl JPV0Addr {
-    pub fn new(addr: u16) -> JPV0Addr {
-        JPV0Addr { addr }
-    }
-}
-
-impl Opcode for JPV0Addr {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for JPV0Addr {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "JP V0, {:#05x}", self.addr)
-    }
-}
-
-pub struct RNDVxByte { x: u8, byte: u8 }
-impl RNDVxByte {
-    pub fn new(x: u8, byte: u8) -> RNDVxByte {
-        RNDVxByte{ x, byte }
-    }
-}
-
-impl Opcode for RNDVxByte {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for RNDVxByte {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "RND V{:x}, {:#04x}", self.x, self.byte)
-    }
-}
-
-pub struct DRW { x: u8, y: u8, nibble: u8 }
-impl DRW {
-    pub fn new(x: u8, y: u8, nibble: u8) -> DRW {
-        DRW{ x, y, nibble }
-    }
-}
-
-impl Opcode for DRW {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for DRW {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "DRW V{:x}, V{:x}, {:#03x}", self.x, self.y, self.nibble)
-
-    }
-}
-
-pub struct SKPVx { x: u8 }
-impl SKPVx {
-    pub fn new(x: u8) -> SKPVx {
-        SKPVx { x }
-    }
-}
-
-impl Opcode for SKPVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SKPVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SKP V{:x}", self.x)
-    }
-}
-
-pub struct SKNPVx { x: u8 }
-impl SKNPVx {
-    pub fn new(x: u8) -> SKNPVx {
-        SKNPVx { x }
-    }
-}
-
-impl Opcode for SKNPVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for SKNPVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "SKNP V{:x}", self.x)
-    }
-}
-
-pub struct LDVxDT { x: u8 }
-impl LDVxDT {
-    pub fn new(x: u8) -> LDVxDT {
-        LDVxDT { x }
-    }
-}
-
-impl Opcode for LDVxDT {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDVxDT {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD V{:x}, DT", self.x)
-    }
-}
-
-pub struct LDVxK { x: u8 }
-impl LDVxK {
-    pub fn new(x: u8) -> LDVxK {
-        LDVxK { x }
-    }
-}
-
-impl Opcode for LDVxK {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDVxK {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD V{:x}, K", self.x)
-    }
-}
-
-pub struct LDDTVx { x: u8 }
-impl LDDTVx {
-    pub fn new(x: u8) -> LDDTVx {
-        LDDTVx { x }
-    }
-}
-
-impl Opcode for LDDTVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDDTVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD DT, V{:x}", self.x)
-    }
-}
-
-pub struct LDSTVx { x: u8 }
-impl LDSTVx {
-    pub fn new(x: u8) -> LDSTVx {
-        LDSTVx { x }
-    }
-}
-
-impl Opcode for LDSTVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDSTVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD ST, V{:x}", self.x)
-    }
-}
-
-pub struct ADDIVx { x: u8 }
-impl ADDIVx {
-    pub fn new(x: u8) -> ADDIVx {
-        ADDIVx { x }
-    }
-}
-
-impl Opcode for ADDIVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for ADDIVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "ADD I, V{:x}", self.x)
-    }
-}
-
-pub struct LDFVx { x: u8 }
-impl LDFVx {
-    pub fn new(x: u8) -> LDFVx {
-        LDFVx { x }
-    }
-}
-
-impl Opcode for LDFVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDFVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD F, V{:x}", self.x)
-    }
-}
-
-pub struct LDBVx { x: u8 }
-impl LDBVx {
-    pub fn new(x: u8) -> LDBVx {
-        LDBVx { x }
-    }
-}
-
-impl Opcode for LDBVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDBVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD B, V{:x}", self.x)
-    }
-}
-
-pub struct LDVxI { x: u8 }
-impl LDVxI {
-    pub fn new(x: u8) -> LDVxI {
-        LDVxI { x }
-    }
-}
-
-impl Opcode for LDVxI {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDVxI {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD V{:x}, [I]", self.x)
-    }
-}
-
-pub struct LDIVx { x: u8 }
-impl LDIVx {
-    pub fn new(x: u8) -> LDIVx {
-        LDIVx { x }
-    }
-}
-
-impl Opcode for LDIVx {
-    fn exec(&self, proc_state: &mut ProcState) {
-        unimplemented!()
-    }
-}
-
-impl Display for LDIVx {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "LD [I], V{:x}", self.x)
-    }
-}
-
-pub struct UNKNOWN { op: (u8, u8, u8, u8)}
-impl UNKNOWN {
-    pub fn new(op: (u8, u8, u8, u8)) -> UNKNOWN {
-        UNKNOWN { op }
-    }
-}
-impl Opcode for UNKNOWN {
-    fn exec(&self, proc_state: &mut ProcState) {
-        panic!("UNKNOWN OPCODE {:?}", self.op)
-    }
-}
-
-impl Display for UNKNOWN {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "UNKNOWN ({:#03x}, {:#03x}, {:#03x}, {:#03x})", self.op.0, self.op.1, self.op.2, self.op.3)
-    }
-}
-
-pub fn get_opcode(op: u16) -> Box<Opcode> {
+        match self {
+            Opcode::CLS => write!(f, "CLS"),
+            Opcode::RET => write!(f, "RET"),
+            Opcode::JP{addr} => write!(f, "JP {:#05x}", addr),
+            Opcode::CALL{addr} => write!(f, "CALL {:#05x}", addr),
+            Opcode::SEVxByte{x, byte} => write!(f, "SE V{:x}, {:#04x}", x, byte),
+            Opcode::SNEVxByte{x, byte} => write!(f, "SNE V{:x}, {:#02x}", x, byte),
+            Opcode::SEVxVy{x, y} => write!(f, "SE V{:x}, V{:x}", x, y),
+            Opcode::LDVxByte{x, byte} => write!(f, "LD V{:x}, {:#04x}", x, byte),
+            Opcode::ADDVxByte{x, byte} => write!(f, "ADD V{:x}, {:#04x}", x, byte),
+            Opcode::LDVxVy{x, y} => write!(f, "LD V{:x}, V{:x}", x, y),
+            Opcode::ORVxVy{x, y} => write!(f, "OR V{:x}, V{:x}", x, y),
+            Opcode::ADDVxVy{x, y} => write!(f, "ADD V{:x}, V{:x}", x, y),
+            Opcode::XORVxVy{x, y} => write!(f, "XOR V{:x}, V{:x}", x, y),
+            Opcode::ANDVxVy{x, y} => write!(f, "AND V{:x}, V{:x}", x, y),
+            Opcode::SUBVxVy{x, y} => write!(f, "SUB V{:x}, V{:x}", x, y),
+            Opcode::SHRVxVy{x, y} => write!(f, "SHR V{:x} {{, V{:x}}}", x, y),
+            Opcode::SUBNVxVy{x, y} => write!(f, "SUBN V{:x}, V{:X}", x, y),
+            Opcode::SHLVxVy{x, y} => write!(f, "SHL V{:x} {{, V{:x}}}", x, y),
+            Opcode::SNEVxVy{x, y} => write!(f, "SNE V{:x}, V{:x}", x, y),
+            Opcode::LDIAddr{addr} => write!(f, "LD I, {:#05x}", addr),
+            Opcode::JPV0Addr{addr} => write!(f, "JP V0, {:#05x}", addr),
+            Opcode::RNDVxByte{x, byte} => write!(f, "RND V{:x}, {:#04x}", x, byte),
+            Opcode::DRW{x, y, nibble} => write!(f, "DRW V{:x}, V{:x}, {:#03x}", x, y, nibble),
+            Opcode::SKPVx{x} => write!(f, "SKP V{:x}", x),
+            Opcode::SKNPVx{x} => write!(f, "SKNP V{:x}", x),
+            Opcode::LDVxDT{x} => write!(f, "LD V{:x}, DT", x),
+            Opcode::LDVxK{x} => write!(f, "LD V{:x}, K", x),
+            Opcode::LDDTVx{x} => write!(f, "LD DT, V{:x}", x),
+            Opcode::LDSTVx{x} => write!(f, "LD ST, V{:x}", x),
+            Opcode::ADDIVx{x} => write!(f, "ADD I, V{:x}", x),
+            Opcode::LDFVx{x} => write!(f, "LD F, V{:x}", x),
+            Opcode::LDBVx{x} => write!(f, "LD B, V{:x}", x),
+            Opcode::LDVxI{x} => write!(f, "LD V{:x}, [I]", x),
+            Opcode::LDIVx{x} => write!(f, "LD [I], V{:x}", x),
+            Opcode::UNKNOWN{opcode} => write!(f, "UNKNOWN ({:#03x}, {:#03x}, {:#03x}, {:#03x})", opcode.0, opcode.1, opcode.2, opcode.3),
+        }
+    }
+}
+
+pub fn get_opcode(op: u16) -> Opcode {
     match split_opcode(op) {
-        (0x0, 0x0, 0xE, 0x0) => Box::new(CLS),
-        (0x0, 0x0, 0xE, 0xE) => Box::new(RET),
-        (0x1, _, _, _)       => Box::new(JP::new(op_nnn(op))),
-        (0x2, _, _, _)       => Box::new(CALL::new(op_nnn(op))),
-        (0x3, _, _, _)       => Box::new(SEVxByte::new(op_x(op), op_kk(op))),
-        (0x4, _, _, _)       => Box::new(SNEVxByte::new(op_x(op), op_kk(op))),
-        (0x5, _, _, 0x0)     => Box::new(SEVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x6, _, _, _)       => Box::new(LDVxByte::new(op_x(op), op_kk(op))),
-        (0x7, _, _, _)       => Box::new(ADDVxByte::new(op_x(op), op_kk(op))),
-        (0x8, _, _, 0x0)     => Box::new(LDVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0x1)     => Box::new(ORVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0x2)     => Box::new(ANDVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0x3)     => Box::new(XORVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0x4)     => Box::new(ADDVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0x5)     => Box::new(SUBVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0x6)     => Box::new(SHRVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0x7)     => Box::new(SUBNVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x8, _, _, 0xE)     => Box::new(SHLVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0x9, _, _, 0x0)     => Box::new(SNEVxVy::new(op_xy(op).0, op_xy(op).1)),
-        (0xA, _, _, _)       => Box::new(LDIAddr::new(op_nnn(op))),
-        (0xB, _, _, _)       => Box::new(JPV0Addr::new(op_nnn(op))),
-        (0xC, _, _, _)       => Box::new(RNDVxByte::new(op_x(op), op_kk(op))),
-        (0xD, _, _, _)       => Box::new(DRW::new(op_xy(op).0, op_xy(op).1, op_n(op))),
-        (0xE, _, 0x9, 0xE)   => Box::new(SKPVx::new(op_x(op))),
-        (0xE, _, 0xA, 0x1)   => Box::new(SKNPVx::new(op_x(op))),
-        (0xF, _, 0x0, 0x7)   => Box::new(LDVxDT::new(op_x(op))),
-        (0xF, _, 0x0, 0xA)   => Box::new(LDVxK::new(op_x(op))),
-        (0xF, _, 0x1, 0x5)   => Box::new(LDDTVx::new(op_x(op))),
-        (0xF, _, 0x1, 0x8)   => Box::new(LDSTVx::new(op_x(op))),
-        (0xF, _, 0x1, 0xE)   => Box::new(ADDIVx::new(op_x(op))),
-        (0xF, _, 0x2, 0x9)   => Box::new(LDFVx::new(op_x(op))),
-        (0xF, _, 0x3, 0x3)   => Box::new(LDBVx::new(op_x(op))),
-        (0xF, _, 0x5, 0x5)   => Box::new(LDIVx::new(op_x(op))),
-        (0xF, _, 0x6, 0x5)   => Box::new(LDVxI::new(op_x(op))),
-        _ => Box::new(UNKNOWN::new(split_opcode(op)))
+        (0x0, 0x0, 0xE, 0x0) => Opcode::CLS,
+        (0x0, 0x0, 0xE, 0xE) => Opcode::RET,
+        (0x1, _, _, _)       => Opcode::JP{ addr: op_nnn(op) },
+        (0x2, _, _, _)       => Opcode::CALL{ addr: op_nnn(op) },
+        (0x3, _, _, _)       => Opcode::SEVxByte{ x: op_x(op), byte: op_kk(op) },
+        (0x4, _, _, _)       => Opcode::SNEVxByte{ x: op_x(op), byte: op_kk(op) },
+        (0x5, _, _, 0x0)     => Opcode::SEVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x6, _, _, _)       => Opcode::LDVxByte{ x: op_x(op), byte: op_kk(op) },
+        (0x7, _, _, _)       => Opcode::ADDVxByte{ x: op_x(op), byte: op_kk(op) },
+        (0x8, _, _, 0x0)     => Opcode::LDVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0x1)     => Opcode::ORVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0x2)     => Opcode::ANDVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0x3)     => Opcode::XORVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0x4)     => Opcode::ADDVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0x5)     => Opcode::SUBVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0x6)     => Opcode::SHRVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0x7)     => Opcode::SUBNVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x8, _, _, 0xE)     => Opcode::SHLVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0x9, _, _, 0x0)     => Opcode::SNEVxVy{ x: op_xy(op).0, y: op_xy(op).1 },
+        (0xA, _, _, _)       => Opcode::LDIAddr{ addr: op_nnn(op) },
+        (0xB, _, _, _)       => Opcode::JPV0Addr{ addr: op_nnn(op) },
+        (0xC, _, _, _)       => Opcode::RNDVxByte{ x: op_x(op), byte: op_kk(op) },
+        (0xD, _, _, _)       => Opcode::DRW{ x: op_xy(op).0, y: op_xy(op).1, nibble: op_n(op) },
+        (0xE, _, 0x9, 0xE)   => Opcode::SKPVx{ x: op_x(op) },
+        (0xE, _, 0xA, 0x1)   => Opcode::SKNPVx{ x: op_x(op) },
+        (0xF, _, 0x0, 0x7)   => Opcode::LDVxDT{ x: op_x(op) },
+        (0xF, _, 0x0, 0xA)   => Opcode::LDVxK{ x: op_x(op) },
+        (0xF, _, 0x1, 0x5)   => Opcode::LDDTVx{ x: op_x(op) },
+        (0xF, _, 0x1, 0x8)   => Opcode::LDSTVx{ x: op_x(op) },
+        (0xF, _, 0x1, 0xE)   => Opcode::ADDIVx{ x: op_x(op) },
+        (0xF, _, 0x2, 0x9)   => Opcode::LDFVx{ x: op_x(op) },
+        (0xF, _, 0x3, 0x3)   => Opcode::LDBVx{ x: op_x(op) },
+        (0xF, _, 0x5, 0x5)   => Opcode::LDIVx{ x: op_x(op) },
+        (0xF, _, 0x6, 0x5)   => Opcode::LDVxI{ x: op_x(op) },
+        _                    => Opcode::UNKNOWN{ opcode: split_opcode(op) }
     }
 }
 
