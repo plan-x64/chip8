@@ -1,0 +1,10 @@
+[package]
+name = "chip8-disasm"
+version = "0.1.0"
+authors = ["pal25 <nope@nope.net>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chip8-core = { path = "../chip8-core" }

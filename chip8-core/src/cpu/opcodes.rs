@@ -1,7 +1,5 @@
 use std::fmt::{Display, Formatter, Result};
 
-use super::ProcState;
-
 pub enum Opcode {
     CLS,
     RET,

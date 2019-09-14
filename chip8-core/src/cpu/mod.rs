@@ -1,8 +1,12 @@
+use self::opcodes::*;
+use std::fmt::{Display, Formatter};
+use std::fmt;
+
 pub const MAX_STACK_SIZE: usize = 16;
 pub const MAX_MEMORY_SIZE: usize = 4096;
+pub const STARTING_PROGRAM_COUNTER: u16 = 0x200;
 
 pub mod opcodes;
-use self::opcodes::*;
 
 #[derive(Copy, Clone)]
 pub struct ProcState {
@@ -12,6 +16,13 @@ pub struct ProcState {
     pub pc: u16,
     pub sp: usize,
     pub stack: [u16; MAX_STACK_SIZE],
+}
+
+impl Display for ProcState {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "PC={} | SP={} | I={}", self.pc, self.sp, self.ireg)
+    }
 }
 
 impl ProcState {
@@ -24,7 +35,7 @@ impl ProcState {
             mem,
             vreg: [0x0; 16],
             ireg: 0x0,
-            pc: 0x200,
+            pc: STARTING_PROGRAM_COUNTER,
             sp: 0x0,
             stack: [0x0; 16],
         }
@@ -32,24 +43,25 @@ impl ProcState {
 
     pub fn pop(&mut self) -> u16 {
         let val = self.stack[self.sp as usize];
-        self.sp = self.sp - 1;
+        let (wrapped_sp, overflowed) = self.sp.overflowing_sub(1);
 
-        self.check_sp_bounds();
+        self.sp = wrapped_sp;
+
+        if overflowed {
+            panic!("Under-flowed stack: {}", &self);
+        }
 
         return val;
     }
 
     pub fn push(&mut self, val: u16) {
         self.sp = self.sp + 1;
-        self.stack[self.sp] = val;
 
-        self.check_sp_bounds();
-    }
-
-    fn check_sp_bounds(&self) {
         if self.sp > MAX_STACK_SIZE {
-            panic!("SP={} is out of bounds!", self.sp)
+            panic!("Over-flowed stack: {}", &self)
         }
+
+        self.stack[self.sp] = val;
     }
 
     pub fn fetch_and_decode_opcode(&mut self) -> Opcode {
@@ -69,17 +81,17 @@ impl ProcState {
             Opcode::CALL{addr} => { let cur_pc = self.pc; self.push(cur_pc); self.pc = addr; },
             Opcode::SEVxByte{x, byte} => {
                 if self.vreg[x as usize] == byte {
-                    self.pc = self.pc + 2;
+                    self.skip_next_instruction();
                 }
             },
             Opcode::SNEVxByte{x, byte} => {
                 if self.vreg[x as usize] != byte {
-                    self.pc = self.pc + 2;
+                    self.skip_next_instruction();
                 }
             },
             Opcode::SEVxVy{x, y} => {
                 if self.vreg[x as usize] == self.vreg[y as usize] {
-                    self.pc + self.pc + 2;
+                    self.skip_next_instruction();
                 }
             },
             Opcode::LDVxByte{x, byte} => { self.vreg[x as usize] = byte; },
@@ -116,14 +128,51 @@ impl ProcState {
             Opcode::UNKNOWN{opcode} => panic!("not implemented"),
         }
     }
+
+    fn skip_next_instruction(&mut self) {
+        self.sp = self.sp + 2;
+    }
 }
 
 #[cfg(test)]
-mod test {
-    use super::{ProcState, MAX_MEMORY_SIZE};
+mod test_cpu_basics {
+    use super::{MAX_MEMORY_SIZE, MAX_STACK_SIZE, ProcState};
 
     #[test]
-    pub fn pop_correctly_performs_bounds_check() {
-        let state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+    #[should_panic]
+    pub fn push_panics_when_upper_bound_exceeded() {
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+
+        for i in 0..(MAX_STACK_SIZE as u16) {
+            state.push(i);
+        }
+    }
+
+    #[test]
+    pub fn push_does_not_panic_when_upper_bound_not_exceeded() {
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+
+        for i in 0..((MAX_STACK_SIZE-1) as u16) {
+            state.push(i);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    pub fn pop_panics_when_lower_bound_exceeded() {
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        state.pop();
+    }
+
+    #[test]
+    pub fn pop_does_not_panic_when_lower_bound_not_exceeded() {
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        state.push(0);
+        state.pop();
+    }
+
+    #[test]
+    pub fn opcode_is_correctly_fetched() {
+        let mut mem = [0x0; MAX_MEMORY_SIZE];
     }
 }

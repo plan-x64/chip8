@@ -1,5 +1,11 @@
 [package]
 name = "chip8"
 version = "0.1.0"
-authors = ["pal25 <nope@nope.net>"]
 publish = false
+edition = "2018"
+
+[workspace]
+
+[dependencies]
+chip8-core = { path = "chip8-core" }
+chip8-disasm = { path = "chip8-disasm" }
