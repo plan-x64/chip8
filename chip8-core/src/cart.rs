@@ -8,7 +8,7 @@ pub struct Cartridge {
 }
 
 impl Cartridge {
-    pub fn load(reader: &mut Read) -> Cartridge {
+    pub fn load(reader: &mut dyn Read) -> Cartridge {
         let mut buffer = [0u8; MAX_CART_SIZE];
         match reader.read(&mut buffer) {
             Ok(size) => Cartridge { buffer, size },

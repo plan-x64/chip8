@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter, Result};
 
+#[derive(Debug, PartialEq)]
 pub enum Opcode {
     CLS,
     RET,
