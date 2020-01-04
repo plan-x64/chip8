@@ -1,18 +1,19 @@
 pub mod opcodes;
-mod font;
 
 use self::opcodes::*;
-use self::font::*;
 
 use std::fmt::{Display, Formatter};
 use std::fmt;
+use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::cell::Cell;
 
 pub const MAX_STACK_SIZE: usize = 16;
 pub const MAX_MEMORY_SIZE: usize = 4096;
 pub const STARTING_PROGRAM_COUNTER: u16 = 0x200;
+pub const SCREEN_SIZE: usize = 32;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct ProcState {
     pub mem: [u8; 4096],
     pub vreg: [u8; 16],
@@ -21,7 +22,9 @@ pub struct ProcState {
     pub sp: usize,
     pub stack: [u16; MAX_STACK_SIZE],
     pub delay_t: u8,
-    pub sound_t: u8
+    pub sound_t: u8,
+    pub io_queue: Rc<Cell<Option<u8>>>,
+    pub video_buffer: [u64; SCREEN_SIZE]
 }
 
 impl Display for ProcState {
@@ -32,10 +35,10 @@ impl Display for ProcState {
 
 impl ProcState {
     pub fn reset(self) -> ProcState {
-        ProcState::new([0x0; MAX_MEMORY_SIZE])
+        ProcState::new([0x0; MAX_MEMORY_SIZE], self.io_queue)
     }
 
-    pub fn new(mem: [u8; MAX_MEMORY_SIZE]) -> ProcState {
+    pub fn new(mem: [u8; MAX_MEMORY_SIZE], io_queue: Rc<Cell<Option<u8>>>) -> ProcState {
         ProcState {
             mem,
             vreg: [0x0; 16],
@@ -44,7 +47,9 @@ impl ProcState {
             sp: 0x0,
             stack: [0x0; 16],
             delay_t: 0,
-            sound_t: 0
+            sound_t: 0,
+            io_queue,
+            video_buffer: [0x0; SCREEN_SIZE]
         }
     }
 
@@ -82,7 +87,9 @@ impl ProcState {
 
     pub fn execute_opcode(&mut self, op: Opcode) {
         match op {
-            Opcode::CLS => panic!("CLS not implemented!"),
+            Opcode::CLS => {
+
+            },
             Opcode::RET => {
                 self.pc = self.pop();
             },
@@ -135,7 +142,7 @@ impl ProcState {
                 self.vreg[x as usize] = val;
                 self.vreg[0xF] = if borrowed { 0 } else { 1 };
             },
-            Opcode::SHRVxVy{x, y} => {
+            Opcode::SHRVxVy{x, y: _} => {
                 self.vreg[0xF] = self.vreg[x as usize] & 0x1;
                 self.vreg[x as usize] = self.vreg[x as usize] >> 1;
             },
@@ -144,7 +151,7 @@ impl ProcState {
                 self.vreg[x as usize] = val;
                 self.vreg[0xF] = if borrowed { 0 } else { 1 };
             },
-            Opcode::SHLVxVy{x, y} => {
+            Opcode::SHLVxVy{x, y: _} => {
                 self.vreg[0xF] = self.vreg[x as usize] & 0x80;
                 self.vreg[x as usize] = self.vreg[x as usize] << 1;
             },
@@ -162,13 +169,46 @@ impl ProcState {
             Opcode::RNDVxByte{x, byte} => {
                 self.vreg[x as usize] = self.rand() & byte;
             },
-            Opcode::DRW{x, y, nibble} => panic!("not implemented -- no video"),
-            Opcode::SKPVx{x} => panic!("not implemented -- no IO"),
-            Opcode::SKNPVx{x} => panic!("not implemented -- no IO"),
+            Opcode::DRW{x, y, nibble} => {
+                let mut sprite_mask: [u64; SCREEN_SIZE] = [0x0; SCREEN_SIZE];
+                for i in 0 .. nibble {
+                    let sprite_line: u64 = self.mem[(self.ireg + i as u16) as usize] as u64;
+                    sprite_mask[(y as usize) + (i as usize)] = sprite_line >> (x as u64);
+                }
+
+                self.vreg[0xF] = 0;
+                let old_buffer = self.video_buffer;
+                for i in 0 .. SCREEN_SIZE {
+                     self.video_buffer[i] = sprite_mask[i] ^ self.video_buffer[i];
+                    if (old_buffer[i] & !self.video_buffer[i]) != 0 {
+                        self.vreg[0xF] = 1;
+                    }
+                }
+            },
+            Opcode::SKPVx{x} => {
+                let curr_key = self.io_queue.get();
+                match curr_key {
+                    None => (),
+                    Some(key) => if key == self.vreg[x as usize] { self.skip_next_instruction() }
+                }
+            },
+            Opcode::SKNPVx{x} => {
+                let curr_key = self.io_queue.get();
+                match curr_key {
+                    None => self.skip_next_instruction(),
+                    Some(key) => if key != self.vreg[x as usize] { self.skip_next_instruction() }
+                }
+            },
             Opcode::LDVxDT{x} => {
                 self.vreg[x as usize] = self.delay_t;
             },
-            Opcode::LDVxK{x} => panic!("not implemented -- no IO"),
+            Opcode::LDVxK{x} => {
+                let curr_key = self.io_queue.get();
+                match curr_key {
+                    None => self.pc = self.pc - 2, // Reset to give appearance of blocking
+                    Some(key) => self.vreg[x as usize] = key
+                }
+            },
             Opcode::LDDTVx{x} => {
                 self.delay_t = self.vreg[x as usize];
             },
@@ -185,23 +225,23 @@ impl ProcState {
                 let vx = self.vreg[x as usize];
                 let hundreds = vx / 100;
                 let tens = (vx - hundreds) / 10;
-                let ones = (vx - hundreds - tens);
+                let ones = vx - hundreds - tens;
 
                 self.mem[self.ireg as usize] = hundreds;
                 self.mem[(self.ireg as usize) + 1] = tens;
                 self.mem[(self.ireg as usize) + 2] = ones;
             },
             Opcode::LDVxI{x} => {
-                for k in 0..15 {
-                    self.mem[(self.ireg as usize) + k] = self.vreg[k];
+                for k in 0 .. x {
+                    self.mem[(self.ireg as usize) + (k as usize)] = self.vreg[k as usize];
                 }
             },
             Opcode::LDIVx{x} => {
-                for k in 0 .. 15 {
-                    self.vreg[k] = self.mem[(self.ireg as usize) + k];
+                for k in 0 .. x {
+                    self.vreg[k as usize] = self.mem[(self.ireg as usize) + (k as usize)];
                 }
             },
-            Opcode::UNKNOWN{opcode} => panic!("unknown opcode {}", op),
+            Opcode::UNKNOWN{opcode: _} => panic!("unknown opcode {}", op),
         }
     }
 
@@ -223,12 +263,15 @@ impl ProcState {
 
 #[cfg(test)]
 mod test_cpu_basics {
-    use super::{MAX_MEMORY_SIZE, MAX_STACK_SIZE, ProcState};
+
+    use std::rc::Rc;
     use crate::cpu::opcodes::Opcode;
+    use crate::cpu::{ProcState, MAX_MEMORY_SIZE, MAX_STACK_SIZE};
+    use std::cell::Cell;
 
     #[test]
     pub fn pc_double_inc_on_skip_next_instruction() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
 
         for _ in 0..MAX_MEMORY_SIZE {
             let current_pc = state.pc;
@@ -240,7 +283,7 @@ mod test_cpu_basics {
     #[test]
     #[should_panic]
     pub fn push_panics_when_upper_bound_exceeded() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
 
         for i in 0..(MAX_STACK_SIZE as u16) {
             state.push(i);
@@ -249,7 +292,7 @@ mod test_cpu_basics {
 
     #[test]
     pub fn push_does_not_panic_when_upper_bound_not_exceeded() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
 
         for i in 0..((MAX_STACK_SIZE-1) as u16) {
             state.push(i);
@@ -259,13 +302,13 @@ mod test_cpu_basics {
     #[test]
     #[should_panic]
     pub fn pop_panics_when_lower_bound_exceeded() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
         state.pop();
     }
 
     #[test]
     pub fn pop_does_not_panic_when_lower_bound_not_exceeded() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
         state.push(0);
         state.pop();
     }
@@ -276,7 +319,7 @@ mod test_cpu_basics {
         mem[0x0] = 0xA1;
         mem[0x1] = 0x23;
 
-        let mut state = ProcState::new(mem);
+        let mut state = ProcState::new(mem, Rc::new(Cell::new(Option::None)));
         state.pc = 0;
 
         let opcode = state.fetch_and_decode_opcode();
@@ -286,7 +329,7 @@ mod test_cpu_basics {
 
     #[test]
     pub fn program_counter_is_incremented_after_fetch() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
 
         let initial_pc = state.pc;
         state.fetch_and_decode_opcode();
@@ -298,12 +341,14 @@ mod test_cpu_basics {
 #[cfg(test)]
 mod test_cpu_execution {
 
-    use super::{MAX_MEMORY_SIZE, ProcState};
-    use super::opcodes::Opcode;
+    use std::rc::Rc;
+    use crate::cpu::opcodes::Opcode;
+    use crate::cpu::{ProcState, MAX_MEMORY_SIZE};
+    use std::cell::Cell;
 
     #[test]
     pub fn ret_decrements_stack_pointer() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
 
         for _ in 0..10 {
             state.push(0x200);
@@ -318,7 +363,7 @@ mod test_cpu_execution {
 
     #[test]
     pub fn ret_sets_program_counter_to_value_on_top_of_stack() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
         let expected_pc: u16 = state.pc + 0x2FE;
         state.push(expected_pc);
 
@@ -329,7 +374,7 @@ mod test_cpu_execution {
 
     #[test]
     pub fn jmp_unconditionally_sets_program_counter() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
 
         for i in 0x200..(MAX_MEMORY_SIZE as u16) {
             state.execute_opcode(Opcode::JP { addr: i });
@@ -339,7 +384,7 @@ mod test_cpu_execution {
 
     #[test]
     pub fn call_updates_program_counter_to_addr() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE], Rc::new(Cell::new(Option::None)));
         let addr = 0x123;
 
         state.execute_opcode(Opcode::CALL { addr });
@@ -348,7 +393,7 @@ mod test_cpu_execution {
 
     #[test]
     pub fn call_stores_existing_program_counter_on_stack() {
-        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE]);
+        let mut state = ProcState::new([0x0; MAX_MEMORY_SIZE],Rc::new(Cell::new(Option::None)));
         let previous_pc = 0x456;
         state.pc = previous_pc;
 

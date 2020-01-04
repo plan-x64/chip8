@@ -1,5 +1,3 @@
-extern crate chip8_core;
-
 use std::env;
 use std::fs::File;
 use std::path::Path;
@@ -7,6 +5,8 @@ use std::vec::Vec;
 
 use chip8_core::cart::Cartridge;
 use chip8_core::cpu::{ProcState, MAX_MEMORY_SIZE};
+use std::rc::Rc;
+use std::cell::Cell;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -19,7 +19,7 @@ fn main() {
     for i in 0..cart.size {
         mem[i + 0x200] = cart.buffer[i];
     }
-    let mut state = ProcState::new(mem);
+    let mut state = ProcState::new(mem, Rc::new(Cell::new(Option::None)));
 
     println!("Cart Loaded. Size={} bytes", cart.size);
     println!(" {:2} |  {:2}  | {}", "ADDR", "OP", "INSTRUCTION");
