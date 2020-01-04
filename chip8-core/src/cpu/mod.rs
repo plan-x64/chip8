@@ -1,17 +1,18 @@
-pub mod opcodes;
-
-use self::opcodes::*;
-
+use std::cell::Cell;
 use std::fmt::{Display, Formatter};
 use std::fmt;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::cell::Cell;
+
+use crate::SCREEN_HEIGHT;
+
+use self::opcodes::*;
+
+pub mod opcodes;
 
 pub const MAX_STACK_SIZE: usize = 16;
 pub const MAX_MEMORY_SIZE: usize = 4096;
 pub const STARTING_PROGRAM_COUNTER: u16 = 0x200;
-pub const SCREEN_SIZE: usize = 32;
 
 #[derive(Clone)]
 pub struct ProcState {
@@ -24,12 +25,13 @@ pub struct ProcState {
     pub delay_t: u8,
     pub sound_t: u8,
     pub io_queue: Rc<Cell<Option<u8>>>,
-    pub video_buffer: [u64; SCREEN_SIZE]
+    pub video_buffer: [u64; SCREEN_HEIGHT],
+    pub clock: u64
 }
 
 impl Display for ProcState {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "PC={} | SP={} | I={}", self.pc, self.sp, self.ireg)
+        write!(f, "PC={:#05x} | SP={:#03x} | I={:#05x}", self.pc, self.sp, self.ireg)
     }
 }
 
@@ -49,7 +51,8 @@ impl ProcState {
             delay_t: 0,
             sound_t: 0,
             io_queue,
-            video_buffer: [0x0; SCREEN_SIZE]
+            video_buffer: [0x0; SCREEN_HEIGHT],
+            clock: 0
         }
     }
 
@@ -74,6 +77,12 @@ impl ProcState {
         }
 
         self.stack[self.sp] = val;
+    }
+
+    pub fn clock_tick(&mut self, freq: u64) {
+        self.clock += 1;
+        self.delay_t = self.delay_t.checked_sub(1).unwrap_or(0);
+        self.sound_t = self.sound_t.checked_sub(1).unwrap_or(0);
     }
 
     pub fn fetch_and_decode_opcode(&mut self) -> Opcode {
@@ -118,7 +127,8 @@ impl ProcState {
                 self.vreg[x as usize] = byte;
             },
             Opcode::ADDVxByte{x, byte} => {
-                self.vreg[x as usize] = self.vreg[x as usize] + byte;
+                let (val, _) = self.vreg[x as usize].overflowing_add(byte);
+                self.vreg[x as usize] = val;
             },
             Opcode::LDVxVy{x, y} => {
                 self.vreg[x as usize] = self.vreg[y as usize];
@@ -138,7 +148,7 @@ impl ProcState {
                 self.vreg[x as usize] = self.vreg[x as usize] & self.vreg[y as usize];
             },
             Opcode::SUBVxVy{x, y} => {
-               let (val, borrowed) = self.vreg[x as usize].overflowing_sub(self.vreg[y as usize]);
+                let (val, borrowed) = self.vreg[x as usize].overflowing_sub(self.vreg[y as usize]);
                 self.vreg[x as usize] = val;
                 self.vreg[0xF] = if borrowed { 0 } else { 1 };
             },
@@ -152,7 +162,7 @@ impl ProcState {
                 self.vreg[0xF] = if borrowed { 0 } else { 1 };
             },
             Opcode::SHLVxVy{x, y: _} => {
-                self.vreg[0xF] = self.vreg[x as usize] & 0x80;
+                self.vreg[0xF] = self.vreg[x as usize] >> 7 & 0x1;
                 self.vreg[x as usize] = self.vreg[x as usize] << 1;
             },
             Opcode::SNEVxVy{x, y} => {
@@ -170,16 +180,20 @@ impl ProcState {
                 self.vreg[x as usize] = self.rand() & byte;
             },
             Opcode::DRW{x, y, nibble} => {
-                let mut sprite_mask: [u64; SCREEN_SIZE] = [0x0; SCREEN_SIZE];
+                let mut sprite_mask: [u64; SCREEN_HEIGHT] = [0x0; SCREEN_HEIGHT];
                 for i in 0 .. nibble {
-                    let sprite_line: u64 = self.mem[(self.ireg + i as u16) as usize] as u64;
-                    sprite_mask[(y as usize) + (i as usize)] = sprite_line >> (x as u64);
+                    let sprite_line = self.mem[(self.ireg + i as u16) as usize];
+                    let xpos = self.vreg[x as usize];
+                    let ypos = self.vreg[y as usize];
+                    if (ypos as usize + i as usize) < SCREEN_HEIGHT {
+                        sprite_mask[(ypos as usize) + (i as usize)] = ((sprite_line as u64) << 56) >> (xpos as u64);
+                    }
                 }
 
                 self.vreg[0xF] = 0;
                 let old_buffer = self.video_buffer;
-                for i in 0 .. SCREEN_SIZE {
-                     self.video_buffer[i] = sprite_mask[i] ^ self.video_buffer[i];
+                for i in 0 .. SCREEN_HEIGHT {
+                    self.video_buffer[i] = sprite_mask[i] ^ self.video_buffer[i];
                     if (old_buffer[i] & !self.video_buffer[i]) != 0 {
                         self.vreg[0xF] = 1;
                     }
@@ -224,20 +238,20 @@ impl ProcState {
             Opcode::LDBVx{x} => {
                 let vx = self.vreg[x as usize];
                 let hundreds = vx / 100;
-                let tens = (vx - hundreds) / 10;
-                let ones = vx - hundreds - tens;
+                let tens = (vx - (hundreds * 100)) / 10;
+                let ones = vx - (hundreds * 100) - (tens * 10);
 
                 self.mem[self.ireg as usize] = hundreds;
                 self.mem[(self.ireg as usize) + 1] = tens;
                 self.mem[(self.ireg as usize) + 2] = ones;
             },
-            Opcode::LDVxI{x} => {
-                for k in 0 .. x {
+            Opcode::LDIVx{x} => {
+                for k in 0 ..= x {
                     self.mem[(self.ireg as usize) + (k as usize)] = self.vreg[k as usize];
                 }
             },
-            Opcode::LDIVx{x} => {
-                for k in 0 .. x {
+            Opcode::LDVxI{x} => {
+                for k in 0 ..= x {
                     self.vreg[k as usize] = self.mem[(self.ireg as usize) + (k as usize)];
                 }
             },
@@ -263,11 +277,11 @@ impl ProcState {
 
 #[cfg(test)]
 mod test_cpu_basics {
-
-    use std::rc::Rc;
-    use crate::cpu::opcodes::Opcode;
-    use crate::cpu::{ProcState, MAX_MEMORY_SIZE, MAX_STACK_SIZE};
     use std::cell::Cell;
+    use std::rc::Rc;
+
+    use crate::cpu::{MAX_MEMORY_SIZE, MAX_STACK_SIZE, ProcState};
+    use crate::cpu::opcodes::Opcode;
 
     #[test]
     pub fn pc_double_inc_on_skip_next_instruction() {
@@ -340,11 +354,11 @@ mod test_cpu_basics {
 
 #[cfg(test)]
 mod test_cpu_execution {
-
-    use std::rc::Rc;
-    use crate::cpu::opcodes::Opcode;
-    use crate::cpu::{ProcState, MAX_MEMORY_SIZE};
     use std::cell::Cell;
+    use std::rc::Rc;
+
+    use crate::cpu::{MAX_MEMORY_SIZE, ProcState};
+    use crate::cpu::opcodes::Opcode;
 
     #[test]
     pub fn ret_decrements_stack_pointer() {
