@@ -79,7 +79,7 @@ impl ProcState {
         self.stack[self.sp] = val;
     }
 
-    pub fn clock_tick(&mut self, freq: u64) {
+    pub fn clock_tick(&mut self, _freq: u64) {
         self.clock += 1;
         self.delay_t = self.delay_t.checked_sub(1).unwrap_or(0);
         self.sound_t = self.sound_t.checked_sub(1).unwrap_or(0);
