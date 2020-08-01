@@ -49,7 +49,7 @@ pub fn main() -> Result<(), String> {
 
         state.clock_tick(1);
 
-        draw_screen(&mut window, &mut events, &state.video_buffer);
+        draw_screen(&mut window, &mut events, &state.video_buffer)?;
 
         for event in events.poll_iter() {
             match event {
@@ -87,7 +87,7 @@ fn draw_screen(window: &mut Window, events: &mut EventPump, video_buffer: &[u64]
         }
     }
 
-    surface.finish();
+    surface.finish()?;
     Ok(())
 }
 

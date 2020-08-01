@@ -36,11 +36,11 @@ impl Display for ProcState {
 }
 
 impl ProcState {
-    pub fn reset(self) -> ProcState {
+    pub fn reset(self) -> Self {
         ProcState::new([0x0; MAX_MEMORY_SIZE], self.io_queue)
     }
 
-    pub fn new(mem: [u8; MAX_MEMORY_SIZE], io_queue: Rc<Cell<Option<u8>>>) -> ProcState {
+    pub fn new(mem: [u8; MAX_MEMORY_SIZE], io_queue: Rc<Cell<Option<u8>>>) -> Self {
         ProcState {
             mem,
             vreg: [0x0; 16],
